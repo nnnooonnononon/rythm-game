@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3efe6">
+<title>Rhythm Tap — ฝึกอ่านจังหวะ</title>
+<style>
+:root{
+  --bg:#f3efe6; --card:#fffdf8; --ink:#1c2230; --muted:#6b7280; --line:#e4ddcf;
+  --accent:#e4572e; --accent2:#c9431d; --blue:#2f6fed;
+  --perfect:#17a06a; --good:#6aa513; --ok:#e09b0a; --miss:#d63e3e;
+  --shadow:0 1px 0 rgba(0,0,0,.04),0 10px 28px -14px rgba(60,40,10,.3);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#12151c; --card:#1b2029; --ink:#ece8de; --muted:#9aa3b2; --line:#2b3240;
+    --accent:#ff6a3d; --accent2:#e5522a; --blue:#7aa2ff;
+    --perfect:#35d196; --good:#a3d84a; --ok:#f2b73a; --miss:#ff6b6b;
+    --shadow:0 10px 28px -14px rgba(0,0,0,.7);}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans Thai","Sarabun",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 56px}
+header{margin-bottom:16px}
+header h1{margin:0;font-size:clamp(24px,4vw,34px);letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--muted);font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+.card+.card,.card+.pad-wrap,.pad-wrap+.actions,.actions+.card{margin-top:14px}
+
+/* settings */
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 16px;align-items:end}
+.settings label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+select,input[type=range]{font:inherit;color:var(--ink)}
+select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:15px}
+input[type=range]{accent-color:var(--accent);width:100%}
+.more{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:10px}
+.more summary{cursor:pointer;color:var(--muted);font-size:14px;font-weight:600}
+.more .inner{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px;margin-top:10px}
+.chk{flex-direction:row!important;align-items:center;gap:8px!important;color:var(--ink)!important;font-weight:500!important;font-size:14px!important}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);font-weight:400}
+
+/* stage */
+.stage-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;justify-content:space-between;margin-bottom:6px}
+.dots{display:flex;gap:8px;align-items:center;min-height:24px}
+.dot{width:16px;height:16px;border-radius:50%;background:var(--line);transition:transform .08s,background .08s}
+.dot.first{width:20px;height:20px}
+.dot.ci.on{background:var(--blue);transform:scale(1.25)}
+.dot.go.on{background:var(--accent);transform:scale(1.25)}
+.status{flex:1;min-width:180px;font-weight:700;font-size:16px}
+.tempo{color:var(--muted);font-size:14px;white-space:nowrap}
+.tempo b{color:var(--ink);font-size:17px}
+.live{display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px;margin:2px 0 6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:1px 10px;background:var(--bg);font-weight:600}
+.chip b{font-variant-numeric:tabular-nums}
+.chip.p{color:var(--perfect)}.chip.g{color:var(--good)}.chip.o{color:var(--ok)}.chip.m{color:var(--miss)}.chip.x{color:var(--muted)}
+.staffwrap{position:relative;border-radius:12px;background:linear-gradient(var(--card),var(--card));overflow:hidden}
+#staff{display:block;width:100%;height:auto;user-select:none}
+.count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:min(38vw,230px);font-weight:800;color:var(--blue);opacity:.16;pointer-events:none;font-family:Georgia,serif}
+
+/* svg */
+.sl{stroke:var(--ink);stroke-width:1.2;opacity:.85}
+.bar{stroke:var(--ink);stroke-width:1.5}
+.barthick{fill:var(--ink)}
+.clef{fill:var(--ink)}
+.ts{fill:var(--ink);font:700 27px Georgia,"Times New Roman",serif;text-anchor:middle}
+.mnum{fill:var(--muted);font:600 10px system-ui,sans-serif}
+.bn{fill:var(--muted);font:600 11px system-ui,sans-serif;text-anchor:middle;opacity:.8}
+.bn.b1{opacity:1;font-weight:800}
+.rest rect,.rest circle{fill:var(--ink)}
+.rl{fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.note{color:var(--ink)}
+.note .head{fill:currentColor;stroke:currentColor;stroke-width:1}
+.note .head.hollow{fill:var(--card);stroke-width:2.1}
+.note .stem{stroke:currentColor;stroke-width:1.6}
+.note .halo{fill:currentColor;opacity:0}
+.note .lbl{fill:currentColor;font:700 10.5px system-ui,sans-serif;text-anchor:middle}
+.note.perfect{color:var(--perfect)}.note.good{color:var(--good)}.note.ok{color:var(--ok)}.note.miss{color:var(--miss)}
+.note.perfect .halo,.note.good .halo,.note.ok .halo,.note.miss .halo{opacity:.17}
+.note.flash{color:var(--blue)}.note.flash .halo{opacity:.28}
+.beam{fill:var(--ink)}
+.tri{fill:none;stroke:var(--ink);stroke-width:1.2}
+.trin{fill:var(--ink);font:italic 700 13px Georgia,serif;text-anchor:middle}
+.mhl{fill:var(--blue);opacity:.07}
+.ph{stroke:var(--accent);stroke-width:2.6;stroke-linecap:round}
+
+/* pad + actions */
+.pad-wrap{display:block}
+#pad{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;
+  min-height:clamp(120px,22vh,190px);border:0;border-radius:22px;cursor:pointer;color:#fff;
+  background:linear-gradient(180deg,var(--accent),var(--accent2));
+  box-shadow:0 8px 0 rgba(0,0,0,.18),0 18px 30px -14px rgba(228,87,46,.6);
+  transition:transform .05s,box-shadow .05s;touch-action:manipulation;user-select:none;-webkit-user-select:none;font-family:inherit}
+#pad.down,#pad:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(0,0,0,.18),0 8px 16px -10px rgba(228,87,46,.6)}
+#pad .main{font-size:clamp(30px,6vw,46px);font-weight:800;letter-spacing:.02em}
+#pad .sub{font-size:14px;opacity:.9}
+#pad.perfect{background:linear-gradient(180deg,#22b97e,#14935f)}
+#pad.good{background:linear-gradient(180deg,#80be26,#5e9710)}
+#pad.ok{background:linear-gradient(180deg,#eead1f,#cb8a05)}
+#pad.bad{background:linear-gradient(180deg,#e55a5a,#c33636)}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:inherit;font-weight:700;font-size:16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:11px 20px;cursor:pointer;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.btn[hidden]{display:none}
+
+/* seal mascot */
+:root{--sea1:#d4ecf8;--sea2:#f1faff}
+@media (prefers-color-scheme:dark){:root{--sea1:#1d3b52;--sea2:#2a5570}}
+.play-row{display:grid;grid-template-columns:minmax(120px,220px) 1fr;gap:14px;margin-top:14px;align-items:stretch}
+.play-row+.actions{margin-top:14px}
+.seal-card{position:relative;border-radius:22px;border:1px solid var(--line);background:linear-gradient(var(--sea2),var(--sea1));box-shadow:var(--shadow);overflow:hidden}
+#seal{display:block;width:100%;height:auto}
+.cap{position:absolute;left:0;right:0;bottom:3px;text-align:center;font-size:11px;font-weight:700;color:#4d6b7c}
+.bubble{position:absolute;top:6px;right:6px;background:#fff;color:#1c2230;border:3px solid var(--line);border-radius:14px;padding:0 10px;font-weight:800;font-size:15px;opacity:0;pointer-events:none}
+.bubble.show{animation:pop .55s ease-out}
+.bubble.perfect{border-color:var(--perfect)}.bubble.good{border-color:var(--good)}.bubble.ok{border-color:var(--ok)}.bubble.bad{border-color:var(--miss)}
+@keyframes pop{0%{opacity:0;transform:scale(.5)}15%{opacity:1;transform:scale(1.15)}30%{transform:scale(1)}75%{opacity:1}100%{opacity:0}}
+#sealL,#sealR,#sealBelly,#sealRing,#sealHead{transform-box:view-box}
+#sealL{transform-origin:70px 122px}#sealR{transform-origin:170px 122px}
+#sealBelly{transform-origin:120px 172px}#sealRing{transform-origin:120px 176px;opacity:0}
+.eyes-h,.sweat{display:none}
+.mood-happy .eyes-n{display:none}.mood-happy .eyes-h{display:inline}.mood-oops .sweat{display:inline}
+.cheer #sealL{animation:cheerL 1.2s ease-in-out}
+.cheer #sealR{animation:cheerR 1.2s ease-in-out}
+#sealL.hit{animation:slapL .2s ease-out}
+#sealR.hit{animation:slapR .2s ease-out}
+#sealBelly.hit{animation:bellyHit .26s ease-out}
+#sealRing.hit{animation:ring .3s ease-out}
+#sealHead.bob{animation:bob .18s ease-out}
+@keyframes slapL{0%{transform:rotate(0)}35%{transform:rotate(-52deg)}100%{transform:rotate(0)}}
+@keyframes slapR{0%{transform:rotate(0)}35%{transform:rotate(52deg)}100%{transform:rotate(0)}}
+@keyframes bellyHit{0%{transform:scale(1,1)}30%{transform:scale(1.08,.9)}60%{transform:scale(.98,1.04)}100%{transform:scale(1,1)}}
+@keyframes ring{0%{opacity:.85;transform:scale(.5)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes bob{0%{transform:translateY(0)}40%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+@keyframes cheerL{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(110deg)}40%,80%{transform:rotate(80deg)}}
+@keyframes cheerR{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-110deg)}40%,80%{transform:rotate(-80deg)}}
+@media (max-width:560px){.play-row{grid-template-columns:112px 1fr}.bubble{font-size:12px;padding:0 6px;border-width:2px}.cap{font-size:9px}}
+
+/* result */
+.hidden{display:none}
+.res-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.stars{font-size:38px;color:var(--ok);letter-spacing:4px}
+.acc{font-size:20px;color:var(--muted)}.acc b{font-size:56px;color:var(--ink);line-height:1}
+.res-msg{font-size:17px;font-weight:600;margin:6px 0 10px}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;background:var(--bg)}
+.stat b{display:block;font-size:26px;line-height:1.1}.stat span{font-size:13px;color:var(--muted)}
+.stat.p b{color:var(--perfect)}.stat.g b{color:var(--good)}.stat.o b{color:var(--ok)}.stat.m b{color:var(--miss)}
+.res-note{margin:10px 0 0;color:var(--muted);font-size:14px}
+.res-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.badge{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:700;margin-left:8px;vertical-align:middle}
+
+.help h2{margin:0 0 6px;font-size:18px}
+.help ul{margin:6px 0 0;padding-left:20px;color:var(--muted);font-size:14.5px}
+.help li+li{margin-top:4px}
+.help b{color:var(--ink)}
+@media (max-width:560px){.wrap{padding:14px 10px 40px}.card{padding:12px;border-radius:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🦭 Rhythm Tap</h1>
+    <p>เกมฝึกอ่านจังหวะ (Rhythm Sight-reading) — ดูโน้ตบนบรรทัด 5 เส้น แล้วตบให้ตรงกับเมโทรนอม พร้อมน้องแมวน้ำตีพุงเป็นจังหวะ</p>
+  </header>
+
+  <section class="card settings" aria-label="ตั้งค่า">
+    <label>ระดับความยาก
+      <select id="level">
+        <option value="1">1 · ตัวดำ ตัวขาว ตัวกลม</option>
+        <option value="2" selected>2 · + เขบ็ต 1 ชั้น (คู่ครึ่งจังหวะ)</option>
+        <option value="3">3 · + พักเขบ็ต และตัวขาวประจุด</option>
+        <option value="4">4 · + เขบ็ต 2 ชั้น (แบ่ง 4 ส่วน)</option>
+        <option value="5">5 · + โน้ตประจุด (ตัวดำประจุด / เขบ็ตประจุด)</option>
+        <option value="6">6 · + ซินโคเปชัน และพักเขบ็ต 2 ชั้น</option>
+        <option value="7">7 · + ตริโอเล็ต</option>
+        <option value="8">8 · + ตริโอเล็ตมีพัก / ตัวดำตริโอเล็ต</option>
+        <option value="9">9 · + ตริโอเล็ตผสมเขบ็ต 2 ชั้น และเซ็กทูเพลต</option>
+        <option value="10">10 · ผสมทุกแบบ (ยากสุด)</option>
+      </select>
+    </label>
+    <label>อัตราจังหวะ
+      <select id="ts">
+        <option value="4" selected>4/4</option>
+        <option value="3">3/4</option>
+        <option value="2">2/4</option>
+      </select>
+    </label>
+    <label>จำนวนห้อง
+      <select id="measures">
+        <option value="2">2 ห้อง</option>
+        <option value="4" selected>4 ห้อง</option>
+        <option value="6">6 ห้อง</option>
+        <option value="8">8 ห้อง</option>
+      </select>
+    </label>
+    <label>ความเร็ว: <span><b id="bpmVal">70</b> BPM</span>
+      <input type="range" id="bpm" min="40" max="140" value="70" step="1">
+    </label>
+    <details class="more">
+      <summary>ตัวเลือกเพิ่มเติม</summary>
+      <div class="inner">
+        <label class="chk"><input type="checkbox" id="tapSound" checked> เสียงตอบรับเมื่อตบ</label>
+        <label class="chk"><input type="checkbox" id="subdiv"> เคาะแบ่งครึ่งจังหวะ (เสียงเบา)</label>
+        <label class="chk"><input type="checkbox" id="beatNums" checked> แสดงเลขจังหวะใต้บรรทัด</label>
+        <label>เมโทรนอม
+          <select id="metro">
+            <option value="always" selected>ดังตลอด</option>
+            <option value="countin">ดังเฉพาะตอนนับเข้า (ยากขึ้น)</option>
+          </select>
+        </label>
+        <label>ชดเชยเวลา: <span><b id="calVal">0</b> ms</span>
+          <input type="range" id="cal" min="-150" max="250" value="0" step="5">
+          <span class="hint">ถ้าผลออกมาว่าตบช้ากว่าเสมอ (หูฟังบลูทูธ/จอสัมผัส) ให้เพิ่มค่านี้</span>
+        </label>
+      </div>
+    </details>
+  </section>
+
+  <section class="card stage" aria-label="โน้ต">
+    <div class="stage-bar">
+      <div class="dots" id="dots" aria-hidden="true"></div>
+      <div class="status" id="status" role="status" aria-live="polite">กด “เริ่ม” แล้วตบตามจังหวะเมโทรนอม</div>
+      <div class="tempo">♩ = <b id="tempoShow">70</b></div>
+    </div>
+    <div class="live" aria-label="สรุปคะแนนสด">
+      <span class="chip p">เป๊ะ <b id="cP">0</b></span>
+      <span class="chip g">ดี <b id="cG">0</b></span>
+      <span class="chip o">พอใช้ <b id="cO">0</b></span>
+      <span class="chip m">พลาด <b id="cM">0</b></span>
+      <span class="chip x">ตบเกิน <b id="cX">0</b></span>
+    </div>
+    <div class="staffwrap">
+      <svg id="staff" role="img" aria-label="โน้ตจังหวะบนบรรทัดห้าเส้น"></svg>
+      <div class="count" id="count" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <div class="play-row">
+    <div class="seal-card" aria-hidden="true">
+      <svg id="seal" viewBox="0 0 240 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#abc1d3"/><stop offset="1" stop-color="#7f98ae"/></linearGradient>
+          <linearGradient id="gBelly" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcf6ec"/><stop offset="1" stop-color="#ecdfcd"/></linearGradient>
+        </defs>
+        <ellipse cx="120" cy="236" rx="110" ry="14" fill="#f5fcff"/>
+        <ellipse cx="120" cy="236" rx="110" ry="14" fill="none" stroke="#bfe0f0" stroke-width="2"/>
+        <ellipse cx="86" cy="226" rx="22" ry="9" fill="#7b93a9" transform="rotate(-12 86 226)"/>
+        <ellipse cx="154" cy="226" rx="22" ry="9" fill="#7b93a9" transform="rotate(12 154 226)"/>
+        <ellipse cx="120" cy="160" rx="78" ry="72" fill="url(#gBody)"/>
+        <ellipse id="sealBelly" cx="120" cy="172" rx="54" ry="52" fill="url(#gBelly)"/>
+        <circle id="sealRing" cx="120" cy="176" r="16" fill="none" stroke="#ff8fa3" stroke-width="5"/>
+        <g id="sealL"><path d="M70 122 C52 122 36 148 32 172 C30 186 44 192 52 182 C66 164 82 138 70 122 Z" fill="#8aa3b8" stroke="#6f889d" stroke-width="2"/></g>
+        <g id="sealR"><path d="M170 122 C188 122 204 148 208 172 C210 186 196 192 188 182 C174 164 158 138 170 122 Z" fill="#8aa3b8" stroke="#6f889d" stroke-width="2"/></g>
+        <g id="sealHead">
+          <circle cx="120" cy="78" r="52" fill="url(#gBody)"/>
+          <ellipse cx="120" cy="94" rx="31" ry="20" fill="#f7efe3"/>
+          <ellipse cx="80" cy="90" rx="9" ry="6" fill="#ff9fb0" opacity=".55"/>
+          <ellipse cx="160" cy="90" rx="9" ry="6" fill="#ff9fb0" opacity=".55"/>
+          <g class="eyes-n">
+            <circle cx="96" cy="66" r="9" fill="#1d2230"/><circle cx="99" cy="62" r="3.2" fill="#fff"/><circle cx="93" cy="70" r="1.4" fill="#fff"/>
+            <circle cx="144" cy="66" r="9" fill="#1d2230"/><circle cx="147" cy="62" r="3.2" fill="#fff"/><circle cx="141" cy="70" r="1.4" fill="#fff"/>
+          </g>
+          <g class="eyes-h" fill="none" stroke="#1d2230" stroke-width="4" stroke-linecap="round">
+            <path d="M87 69 Q96 56 105 69"/><path d="M135 69 Q144 56 153 69"/>
+          </g>
+          <ellipse cx="120" cy="86" rx="9" ry="6" fill="#232837"/>
+          <ellipse cx="117" cy="84" rx="2.6" ry="1.6" fill="#fff" opacity=".7"/>
+          <path d="M120 92 L120 98 M120 98 Q112 108 103 100 M120 98 Q128 108 137 100" fill="none" stroke="#4a3b3b" stroke-width="2.4" stroke-linecap="round"/>
+          <g stroke="#6b7b8a" stroke-width="1.6" stroke-linecap="round" fill="none">
+            <path d="M96 92 L62 84 M95 96 L60 98 M96 100 L64 112"/>
+            <path d="M144 92 L178 84 M145 96 L180 98 M144 100 L176 112"/>
+          </g>
+          <g fill="#8a97a3"><circle cx="104" cy="92" r="1.6"/><circle cx="110" cy="95" r="1.6"/><circle cx="130" cy="95" r="1.6"/><circle cx="136" cy="92" r="1.6"/></g>
+          <path class="sweat" d="M170 36 q-8 12 0 17 q8 -5 0 -17z" fill="#7cc8f2"/>
+        </g>
+      </svg>
+      <div class="bubble" id="sealBubble"></div>
+      <div class="cap">น้องแมวน้ำตีพุง</div>
+    </div>
+    <button id="pad" type="button" aria-label="ปุ่มตบจังหวะ">
+      <span class="main" id="padMain">ตบ!</span>
+      <span class="sub" id="padSub">แตะที่นี่ หรือกด Space / F / J</span>
+    </button>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="bStart" type="button">▶ เริ่ม</button>
+    <button class="btn" id="bDemo" type="button">🔊 ฟังตัวอย่าง</button>
+    <button class="btn" id="bNew" type="button">🎲 จังหวะใหม่</button>
+    <button class="btn primary" id="bStop" type="button" hidden>■ หยุด</button>
+  </div>
+
+  <section class="card hidden" id="result" aria-live="polite"></section>
+
+  <section class="card help">
+    <h2>วิธีเล่น</h2>
+    <ul>
+      <li>โน้ตทุกตัวอยู่บน<b>เส้นกลาง</b>ของบรรทัด (กุญแจเพอร์คัสชัน) — ดูแค่ “ความยาว” ของตัวโน้ตและตัวหยุด</li>
+      <li>กด <b>เริ่ม</b> จะมีนับเข้า 1 ห้อง แล้วเส้นสีส้มจะวิ่งไปตามโน้ต ให้<b>ตบตรงตัวโน้ต</b> ส่วนตัวหยุด (rest) ไม่ต้องตบ</li>
+      <li>ตบได้ด้วยปุ่มใหญ่ (แตะหน้าจอ) หรือคีย์บอร์ด <b>Space / F / J</b></li>
+      <li>เทียบความยาวใน 1 จังหวะ: ตัวกลม = 4 · ตัวขาว = 2 · ตัวดำ = 1 · เขบ็ตชั้นเดียว = ½ · เขบ็ตสองชั้น = ¼ · จุดต่อท้ายเพิ่มอีกครึ่งหนึ่ง · ตริโอเล็ต = 3 ตัวใน 1 จังหวะ</li>
+      <li>น้องแมวน้ำจะ<b>ตีพุงตามที่คุณตบ</b> (ตบแม่นจะยิ้ม ตบพลาดจะเหงื่อตก) และในโหมด “ฟังตัวอย่าง” น้องจะตีพุงเล่นจังหวะให้ดู</li>
+      <li>หลังจบรอบ ตัวเลขใต้โน้ตแสดงว่าตบเร็ว (−) หรือช้า (+) กี่มิลลิวินาที ใช้หูฟังจะแม่นกว่าลำโพง</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const sv = (tag, attrs, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const ui = {
+  level:$('#level'), ts:$('#ts'), measures:$('#measures'), bpm:$('#bpm'), bpmVal:$('#bpmVal'),
+  tapSound:$('#tapSound'), subdiv:$('#subdiv'), metro:$('#metro'), beatNums:$('#beatNums'),
+  cal:$('#cal'), calVal:$('#calVal'), status:$('#status'), count:$('#count'), dots:$('#dots'),
+  pad:$('#pad'), padMain:$('#padMain'), padSub:$('#padSub'), staff:$('#staff'), result:$('#result'),
+  bStart:$('#bStart'), bDemo:$('#bDemo'), bNew:$('#bNew'), bStop:$('#bStop'), tempoShow:$('#tempoShow'),
+  cP:$('#cP'), cG:$('#cG'), cO:$('#cO'), cM:$('#cM'), cX:$('#cX')
+};
+
+const seal = { svg:$('#seal'), fl:$('#sealL'), fr:$('#sealR'), belly:$('#sealBelly'), ring:$('#sealRing'),
+  head:$('#sealHead'), bubble:$('#sealBubble'), side:0, moodT:0, cheerT:0 };
+const ONO = ['ป๊อก!', 'ปุ๊!', 'เปาะ!', 'ตุบ!', 'ปั๊บ!'];
+const retrig = (e, c) => { e.classList.remove(c); e.getBoundingClientRect(); e.classList.add(c); };
+function sealMood(m, ms = 600) {
+  seal.svg.classList.remove('mood-happy', 'mood-oops');
+  clearTimeout(seal.moodT);
+  if (!m) return;
+  seal.svg.classList.add('mood-' + m);
+  seal.moodT = setTimeout(() => seal.svg.classList.remove('mood-happy', 'mood-oops'), ms);
+}
+function sealSlap(g) {
+  const f = seal.side ? seal.fr : seal.fl; seal.side ^= 1;
+  retrig(f, 'hit'); retrig(seal.belly, 'hit'); retrig(seal.ring, 'hit');
+  const b = seal.bubble;
+  b.textContent = g === 'bad' ? 'อุ๊ย!' : ONO[(Math.random() * ONO.length) | 0];
+  b.className = 'bubble ' + g; b.getBoundingClientRect(); b.classList.add('show');
+  sealMood(g === 'perfect' || g === 'good' ? 'happy' : g === 'bad' ? 'oops' : '', 500);
+}
+const sealBob = () => retrig(seal.head, 'bob');
+function sealCheer(acc) {
+  if (acc >= 75) {
+    retrig(seal.svg, 'cheer'); sealMood('happy', 1400);
+    clearTimeout(seal.cheerT); seal.cheerT = setTimeout(() => seal.svg.classList.remove('cheer'), 1300);
+  } else sealMood('oops', 900);
+}
+
+/* ============ ข้อมูลจังหวะ ============ */
+// 1 จังหวะ (ตัวดำ) = 12 tick | ตัวกลม 48, ขาว 24, ดำ 12, เขบ็ต1 ชั้น 6, เขบ็ต2 ชั้น 3, ตริโอเล็ต 4
+const T = 12;
+const mk = (w, min, items, o = {}) => ({ w, min, items, len: items.reduce((s, i) => s + i[0], 0) / T, ...o });
+const PATTERNS = [
+  mk(8,   1, [[12,1]]),
+  mk(1.5, 1, [[12,0]]),
+  mk(2,   1, [[24,1]]),
+  mk(.5,  1, [[24,0]]),
+  mk(.9,  1, [[48,1]]),
+  mk(5,   2, [[6,1],[6,1]]),
+  mk(1.2, 3, [[6,1],[6,0]]),
+  mk(1.6, 3, [[6,0],[6,1]]),
+  mk(1.4, 3, [[36,1]]),
+  mk(2.5, 4, [[3,1],[3,1],[3,1],[3,1]]),
+  mk(1.6, 4, [[6,1],[3,1],[3,1]]),
+  mk(1.6, 4, [[3,1],[3,1],[6,1]]),
+  mk(2,   5, [[9,1],[3,1]]),
+  mk(1.6, 5, [[18,1],[6,1]]),
+  mk(2,   6, [[3,1],[6,1],[3,1]]),
+  mk(1.2, 6, [[3,0],[3,1],[6,1]]),
+  mk(1.2, 6, [[3,1],[3,0],[3,1],[3,1]]),
+  mk(1.2, 6, [[3,1],[3,1],[3,0],[3,1]]),
+  mk(1.2, 6, [[6,0],[3,1],[3,1]]),
+  mk(1.6, 6, [[6,1],[12,1],[6,1]]),
+  mk(1.2, 6, [[3,1],[9,1],[12,1]]),
+  mk(3,   7, [[4,1],[4,1],[4,1]], { tri:3 }),
+  mk(1.2, 8, [[4,0],[4,1],[4,1]], { tri:3 }),
+  mk(1.2, 8, [[4,1],[4,0],[4,1]], { tri:3 }),
+  mk(1.2, 8, [[4,1],[4,1],[4,0]], { tri:3 }),
+  mk(1.6, 8, [[8,1],[4,1]], { tri:3 }),
+  mk(1.6, 8, [[4,1],[8,1]], { tri:3 }),
+  mk(2,   9, [[2,1],[2,1],[2,1],[2,1],[2,1],[2,1]], { tri:6 }),
+  mk(1.4, 9, [[2,1],[2,1],[4,1],[4,1]], { tri:3 }),
+  mk(1.4, 9, [[4,1],[4,1],[2,1],[2,1]], { tri:3 }),
+  mk(1.4, 9, [[4,1],[2,1],[2,1],[4,1]], { tri:3 }),
+  mk(1.4, 10, [[2,1],[2,1],[2,1],[2,0],[2,1],[2,1]], { tri:6 }),
+  mk(1.4, 10, [[2,0],[2,1],[2,1],[2,1],[2,1],[2,1]], { tri:6 }),
+  mk(1.4, 10, [[2,1],[2,1],[2,1],[2,1],[4,1]], { tri:3 }),
+  mk(1.2, 10, [[4,0],[2,1],[2,1],[4,1]], { tri:3 }),
+];
+const fits = (p, b, beats, level) => {
+  if (p.min > level) return false;
+  if (b + p.len > beats) return false;
+  if (p.len === 2 && b % 2) return false;
+  if (p.len >= 3 && b !== 0) return false;
+  return true;
+};
+const pick = (list, level) => {
+  let tot = 0;
+  const ws = list.map(p => { const age = level - p.min; const w = p.w * (age === 0 && level > 1 ? 2 : 1 / (1 + 0.22 * age)); tot += w; return w; });
+  let r = Math.random() * tot;
+  for (let i = 0; i < list.length; i++) { r -= ws[i]; if (r <= 0) return list[i]; }
+  return list[list.length - 1];
+};
+function genMeasure(beats, level, first, nextPid) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const evs = []; let b = 0;
+    while (b < beats) {
+      let cands = PATTERNS.filter(p => fits(p, b, beats, level));
+      if (first && b === 0) { const n = cands.filter(p => p.items[0][1]); if (n.length) cands = n; }
+      const p = pick(cands, level), pid = nextPid();
+      p.items.forEach(([d, n]) => evs.push({ d, note: !!n, tri: p.tri || 0, pid, plen: p.len }));
+      b += p.len;
+    }
+    if (!evs.some(e => e.note)) continue;
+    if (level >= 3 && !evs.some(e => e.note && e.d < 12) && Math.random() < Math.min(.85, .25 * (level - 2))) continue;
+    if (level >= 5 && !evs.some(e => e.note && e.d <= 9 && e.d !== 6) && Math.random() < Math.min(.8, .2 * (level - 4))) continue;
+    return evs;
+  }
+  return [{ d: beats * T, note: true, tri: false, pid: nextPid(), plen: beats }];
+}
+function generate() {
+  const beats = +ui.ts.value, level = +ui.level.value, n = +ui.measures.value;
+  let pid = 0;
+  const measures = [];
+  for (let mi = 0; mi < n; mi++) {
+    const evs = genMeasure(beats, level, mi === 0, () => pid++);
+    let tick = 0; evs.forEach(e => { e.tick = tick; tick += e.d; });
+    measures.push({ events: evs });
+  }
+  const notes = [];
+  measures.forEach((m, mi) => m.events.forEach(ev => {
+    if (ev.note) { ev.nid = notes.length; notes.push({ mi, beat: mi * beats + ev.tick / T }); }
+  }));
+  return { beats, level, measures, notes };
+}
+
+/* ============ สถานะ ============ */
+const state = {
+  piece: null, phase: 'idle', mode: 'play', ctx: null, bus: null,
+  T0: 0, spb: 0, countIn: 0, W: .15, cal: 0, bpm: 70, expected: [], extra: 0,
+  counts: { perfect: 0, good: 0, ok: 0, miss: 0 }, raf: 0, endTimer: 0,
+  noteEls: [], ph: null, mhl: null, dotEls: [], dotKey: '', countTxt: ''
+};
+let L = { perRow: 2, W: 1000, LEFT: 88, mw: 440 };
+const PAD_L = 24, PAD_R = 16, RIGHT = 14, ROW_H = 140, TOPY = 52;
+
+/* ============ เสียง ============ */
+function audio() {
+  if (!state.ctx) state.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  return state.ctx;
+}
+function ensureBus() {
+  const c = audio();
+  if (!state.bus) { state.bus = c.createGain(); state.bus.connect(c.destination); }
+  return state.bus;
+}
+const outLat = () => { const c = state.ctx; return c ? (c.baseLatency || 0) + (c.outputLatency || 0) : 0; };
+function blip(t, f, dur, vol, type = 'sine', f2) {
+  const c = audio(), o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ensureBus());
+  o.start(t); o.stop(t + dur + 0.03);
+}
+const clickSound = (t, accent) => blip(t, accent ? 1760 : 1175, 0.055, accent ? 0.7 : 0.5, 'triangle');
+const subClick = t => blip(t, 880, 0.035, 0.16, 'triangle');
+const tapSound = t => blip(t, 780, 0.1, 0.75, 'triangle', 380);
+const demoSound = t => blip(t, 520, 0.16, 0.8, 'sine', 250);
+
+/* ============ วาดโน้ต ============ */
+function layout() {
+  const narrow = window.innerWidth < 700;
+  L.perRow = narrow ? 1 : 2;
+  L.W = narrow ? 520 : 1000;
+  L.LEFT = narrow ? 80 : 90;
+  L.mw = (L.W - L.LEFT - RIGHT) / L.perRow;
+}
+const xOf = (mi, tick) => {
+  const col = mi % L.perRow, total = state.piece.beats * T;
+  return L.LEFT + col * L.mw + PAD_L + (tick / total) * (L.mw - PAD_L - PAD_R);
+};
+const y0Of = mi => Math.floor(mi / L.perRow) * ROW_H + TOPY;
+const nBeams = d => (d >= 12 || d === 8) ? 0 : d >= 4 ? 1 : 2;
+
+function drawRest(par, x, y0, d) {
+  const g = sv('g', { class: 'rest' }, par);
+  if (d >= 48) sv('rect', { x: x - 7, y: y0 + 10, width: 14, height: 5 }, g);
+  else if (d >= 24) sv('rect', { x: x - 7, y: y0 + 15, width: 14, height: 5 }, g);
+  else if (d >= 12) sv('path', { class: 'rl', d: `M${x-3} ${y0+9} L${x+3} ${y0+16} L${x-3} ${y0+23} L${x+3} ${y0+30} Q${x-6} ${y0+29} ${x-2} ${y0+36}` }, g);
+  else if (d >= 4) {
+    sv('path', { class: 'rl', d: `M${x+4} ${y0+13} L${x-3} ${y0+31}` }, g);
+    sv('path', { class: 'rl', d: `M${x-3} ${y0+17} Q${x+1} ${y0+17} ${x+4} ${y0+13}` }, g);
+    sv('circle', { cx: x - 3, cy: y0 + 17, r: 2.6 }, g);
+  } else {
+    sv('path', { class: 'rl', d: `M${x+5} ${y0+10} L${x-3} ${y0+32}` }, g);
+    sv('path', { class: 'rl', d: `M${x-1} ${y0+14} Q${x+2} ${y0+14} ${x+5} ${y0+10}` }, g);
+    sv('circle', { cx: x - 1, cy: y0 + 14, r: 2.5 }, g);
+    sv('circle', { cx: x - 3.8, cy: y0 + 22, r: 2.5 }, g);
+  }
+}
+function flagPath(sx, t) {
+  return `M${sx} ${t} C${sx+1} ${t+7} ${sx+11} ${t+9} ${sx+8} ${t+21} C${sx+8} ${t+13} ${sx+3} ${t+11} ${sx} ${t+10} Z`;
+}
+
+function renderPiece() {
+  layout();
+  const p = state.piece, svg = ui.staff;
+  svg.innerHTML = '';
+  const rows = Math.ceil(p.measures.length / L.perRow);
+  svg.setAttribute('viewBox', `0 0 ${L.W} ${rows * ROW_H + 24}`);
+  state.mhl = sv('rect', { class: 'mhl', rx: 10, style: 'display:none' }, svg);
+
+  for (let r = 0; r < rows; r++) {
+    const y0 = r * ROW_H + TOPY;
+    const cols = Math.min(L.perRow, p.measures.length - r * L.perRow);
+    const xEnd = L.LEFT + cols * L.mw;
+    for (let i = 0; i < 5; i++) sv('line', { class: 'sl', x1: 8, y1: y0 + i * 10, x2: xEnd, y2: y0 + i * 10 }, svg);
+    sv('line', { class: 'sl', x1: 8, y1: y0, x2: 8, y2: y0 + 40 }, svg);
+    sv('rect', { class: 'clef', x: 24, y: y0 + 10, width: 4.6, height: 20, rx: 1 }, svg);
+    sv('rect', { class: 'clef', x: 33.5, y: y0 + 10, width: 4.6, height: 20, rx: 1 }, svg);
+    if (r === 0) {
+      const a = sv('text', { class: 'ts', x: 62, y: y0 + 19 }, svg); a.textContent = p.beats;
+      const b = sv('text', { class: 'ts', x: 62, y: y0 + 39 }, svg); b.textContent = 4;
+    }
+  }
+  p.measures.forEach((m, mi) => {
+    const y0 = y0Of(mi), col = mi % L.perRow, xR = L.LEFT + (col + 1) * L.mw;
+    if (mi === p.measures.length - 1) {
+      sv('line', { class: 'bar', x1: xR - 5, y1: y0, x2: xR - 5, y2: y0 + 40 }, svg);
+      sv('rect', { class: 'barthick', x: xR - 2.6, y: y0, width: 3.6, height: 40 }, svg);
+    } else sv('line', { class: 'bar', x1: xR, y1: y0, x2: xR, y2: y0 + 40 }, svg);
+    const t = sv('text', { class: 'mnum', x: L.LEFT + col * L.mw + 4, y: y0 - 24 }, svg);
+    t.textContent = mi + 1;
+    if (ui.beatNums.checked) {
+      for (let b = 0; b < p.beats; b++) {
+        const n = sv('text', { class: 'bn' + (b === 0 ? ' b1' : ''), x: xOf(mi, b * T), y: y0 + 78 }, svg);
+        n.textContent = b + 1;
+      }
+    }
+  });
+
+  const gRest = sv('g', {}, svg), gNote = sv('g', {}, svg), gBeam = sv('g', {}, svg);
+  state.noteEls = [];
+  p.measures.forEach((m, mi) => {
+    const y0 = y0Of(mi), cy = y0 + 20, top = cy - 32;
+    m.events.forEach(ev => {
+      const x = xOf(mi, ev.tick); ev.x = x;
+      if (!ev.note) { drawRest(gRest, x, y0, ev.d); return; }
+      const g = sv('g', { class: 'note' }, gNote);
+      sv('circle', { class: 'halo', cx: x, cy, r: 14 }, g);
+      const hollow = ev.d >= 24;
+      sv('ellipse', { class: 'head' + (hollow ? ' hollow' : ''), cx: x, cy, rx: ev.d >= 48 ? 7.6 : 6.4, ry: 4.7, transform: `rotate(-18 ${x} ${cy})` }, g);
+      if (ev.d < 48) sv('line', { class: 'stem', x1: x + 5.9, y1: cy - 1, x2: x + 5.9, y2: top }, g);
+      if (ev.d === 9 || ev.d === 18 || ev.d === 36) sv('circle', { cx: x + 12.5, cy: cy - 5, r: 1.9, fill: 'currentColor' }, g);
+      const lbl = sv('text', { class: 'lbl', x, y: y0 + 58, style: ev.d < 4 ? 'font-size:8px' : '' }, g);
+      ev.g = g;
+      state.noteEls[ev.nid] = { g, lbl };
+    });
+    const groups = new Map();
+    m.events.forEach(ev => { if (!groups.has(ev.pid)) groups.set(ev.pid, []); groups.get(ev.pid).push(ev); });
+    groups.forEach(arr => {
+      const runs = []; let run = [];
+      arr.forEach(ev => {
+        if (ev.note && nBeams(ev.d) > 0) run.push(ev);
+        else { if (run.length) runs.push(run); run = []; }
+      });
+      if (run.length) runs.push(run);
+      runs.forEach(rn => {
+        if (arr[0].plen === 1 && rn.length >= 2) {
+          const sx = rn.map(e => e.x + 5.9);
+          sv('rect', { class: 'beam', x: sx[0] - .8, y: top, width: sx[sx.length - 1] - sx[0] + 1.6, height: 4.6 }, gBeam);
+          let connPrev = false;
+          rn.forEach((e, i) => {
+            if (nBeams(e.d) < 2) { connPrev = false; return; }
+            const nxt = rn[i + 1];
+            if (nxt && nBeams(nxt.d) >= 2) {
+              sv('rect', { class: 'beam', x: sx[i] - .8, y: top + 7.4, width: sx[i + 1] - sx[i] + 1.6, height: 4.6 }, gBeam);
+              connPrev = true;
+            } else {
+              if (!connPrev) {
+                const left = i === rn.length - 1;
+                sv('rect', { class: 'beam', x: left ? sx[i] - 9 : sx[i] - .8, y: top + 7.4, width: 9.8, height: 4.6 }, gBeam);
+              }
+              connPrev = false;
+            }
+          });
+        } else {
+          rn.forEach(e => {
+            for (let k = 0; k < nBeams(e.d); k++) sv('path', { d: flagPath(e.x + 5.9, top + k * 7), fill: 'currentColor' }, e.g);
+          });
+        }
+      });
+      if (arr[0].tri) {
+        const x1 = arr[0].x - 6, x2 = arr[arr.length - 1].x + 10, ym = cy - 41, xm = (x1 + x2) / 2;
+        sv('path', { class: 'tri', d: `M${x1} ${ym + 5} L${x1} ${ym} L${xm - 8} ${ym} M${xm + 8} ${ym} L${x2} ${ym} L${x2} ${ym + 5}` }, gBeam);
+        const t = sv('text', { class: 'trin', x: xm, y: ym + 4.5 }, gBeam); t.textContent = String(arr[0].tri);
+      }
+    });
+  });
+  state.ph = sv('line', { class: 'ph', style: 'display:none' }, svg);
+  applyJudgements();
+}
+
+/* ============ ตัดสินผล ============ */
+function markNote(i, cls, text) {
+  const o = state.noteEls[i]; if (!o) return;
+  o.g.classList.remove('perfect', 'good', 'ok', 'miss', 'flash');
+  if (cls) o.g.classList.add(cls);
+  o.lbl.textContent = text || '';
+}
+function applyJudgements() {
+  state.expected.forEach(e => {
+    if (!e.j) return;
+    markNote(e.i, e.j, e.j === 'miss' ? '✕' : ((e.off > 0 ? '+' : '') + Math.round(e.off * 1000)));
+  });
+}
+function updateLive() {
+  const c = state.counts;
+  ui.cP.textContent = c.perfect; ui.cG.textContent = c.good; ui.cO.textContent = c.ok;
+  ui.cM.textContent = c.miss; ui.cX.textContent = state.extra;
+}
+const setStatus = t => { ui.status.textContent = t; };
+function setCount(t) { if (state.countTxt !== t) { state.countTxt = t; ui.count.textContent = t; } }
+function buildDots() {
+  ui.dots.innerHTML = ''; state.dotEls = []; state.dotKey = '';
+  for (let b = 0; b < state.piece.beats; b++) {
+    const d = document.createElement('span'); d.className = 'dot' + (b === 0 ? ' first' : '');
+    ui.dots.appendChild(d); state.dotEls.push(d);
+  }
+}
+function setDots(idx, kind) {
+  const key = idx + kind;
+  if (state.dotKey === key) return;
+  state.dotKey = key;
+  if (idx >= 0) sealBob();
+  state.dotEls.forEach((d, i) => {
+    d.classList.remove('on', 'ci', 'go');
+    if (i === idx) d.classList.add('on', kind);
+  });
+}
+function updatePlayhead(rel) {
+  const p = state.piece, ph = state.ph, mhl = state.mhl;
+  const total = p.measures.length * p.beats;
+  if (rel < 0 || rel >= total) { ph.style.display = 'none'; mhl.style.display = 'none'; return; }
+  const mi = Math.floor(rel / p.beats), tick = (rel - mi * p.beats) * T;
+  const x = xOf(mi, tick), y0 = y0Of(mi), col = mi % L.perRow;
+  ph.setAttribute('x1', x); ph.setAttribute('x2', x);
+  ph.setAttribute('y1', y0 - 28); ph.setAttribute('y2', y0 + 54);
+  ph.style.display = '';
+  mhl.setAttribute('x', L.LEFT + col * L.mw + 2); mhl.setAttribute('y', y0 - 32);
+  mhl.setAttribute('width', L.mw - 4); mhl.setAttribute('height', 96);
+  mhl.style.display = '';
+}
+
+/* ============ ควบคุมรอบเล่น ============ */
+function runningUI(on) {
+  ui.bStart.hidden = on; ui.bDemo.hidden = on; ui.bNew.hidden = on; ui.bStop.hidden = !on;
+}
+function resetJudgements() {
+  state.expected = []; state.extra = 0;
+  state.counts = { perfect: 0, good: 0, ok: 0, miss: 0 };
+  state.noteEls.forEach((_, i) => markNote(i, null, ''));
+  updateLive();
+}
+function stopRound() {
+  cancelAnimationFrame(state.raf); clearTimeout(state.endTimer);
+  if (state.bus) { try { state.bus.disconnect(); } catch (e) {} state.bus = null; }
+  state.phase = 'idle';
+  if (state.ph) { state.ph.style.display = 'none'; state.mhl.style.display = 'none'; }
+  setCount(''); setDots(-1, ''); runningUI(false);
+}
+async function startRound(mode) {
+  stopRound();
+  const ctx = audio();
+  try { await ctx.resume(); } catch (e) {}
+  ensureBus();
+  const p = state.piece, s = state;
+  ui.result.classList.add('hidden');
+  resetJudgements();
+  s.mode = mode;
+  s.bpm = +ui.bpm.value; s.spb = 60 / s.bpm; s.cal = +ui.cal.value;
+  s.countIn = p.beats;
+  const total = s.countIn + p.measures.length * p.beats;
+  s.T0 = ctx.currentTime + 0.4;
+  const always = ui.metro.value === 'always', sub = ui.subdiv.checked;
+  for (let k = 0; k < total; k++) {
+    if (always || k < s.countIn) {
+      clickSound(s.T0 + k * s.spb, k % p.beats === 0);
+      if (sub) subClick(s.T0 + (k + .5) * s.spb);
+    }
+  }
+  s.expected = p.notes.map((n, i) => ({ i, time: s.T0 + (s.countIn + n.beat) * s.spb, j: null, off: 0, flashed: false }));
+  let minGap = 1;
+  for (let i = 1; i < s.expected.length; i++) minGap = Math.min(minGap, s.expected[i].time - s.expected[i - 1].time);
+  s.W = Math.min(0.17, Math.max(0.06, minGap * 0.5));
+  if (mode === 'demo') s.expected.forEach(e => demoSound(e.time));
+  s.phase = 'counting';
+  setStatus(mode === 'demo' ? 'ฟังตัวอย่าง… (นับเข้าก่อน)' : 'นับเข้า… เตรียมตบ');
+  runningUI(true);
+  const endAt = s.T0 + total * s.spb + 0.45;
+  s.endTimer = setTimeout(finish, Math.max(0, (endAt + outLat() - ctx.currentTime) * 1000));
+  s.raf = requestAnimationFrame(loop);
+}
+function loop() {
+  const s = state;
+  if (s.phase !== 'counting' && s.phase !== 'playing') return;
+  const ctx = s.ctx, now = ctx.currentTime - outLat();
+  const bp = (now - s.T0) / s.spb, rel = bp - s.countIn, beats = s.piece.beats;
+  if (bp < 0) { setCount(''); setDots(-1, ''); }
+  else if (rel < 0) { const n = Math.floor(bp) + 1; setCount(String(n)); setDots(n - 1, 'ci'); }
+  else {
+    setCount(''); setDots(Math.floor(rel) % beats, 'go');
+    if (s.phase === 'counting') { s.phase = 'playing'; setStatus(s.mode === 'demo' ? 'กำลังเล่นตัวอย่าง' : 'ตบเลย!'); }
+  }
+  updatePlayhead(rel);
+  if (s.mode === 'play') {
+    const cur = ctx.currentTime - outLat() - s.cal / 1000;
+    let changed = false;
+    s.expected.forEach(e => {
+      if (!e.j && cur > e.time + s.W) { e.j = 'miss'; e.off = 0; markNote(e.i, 'miss', '✕'); s.counts.miss++; changed = true; sealMood('oops', 450); }
+    });
+    if (changed) updateLive();
+  } else {
+    s.expected.forEach(e => {
+      if (!e.flashed && now >= e.time) {
+        e.flashed = true;
+        const o = s.noteEls[e.i];
+        if (o) { o.g.classList.add('flash'); setTimeout(() => o.g.classList.remove('flash'), 220); }
+        sealSlap('perfect');
+      }
+    });
+  }
+  s.raf = requestAnimationFrame(loop);
+}
+
+/* ============ รับการตบ ============ */
+let padTimer = 0;
+function padFeedback(cls, main, sub) {
+  ui.pad.classList.remove('perfect', 'good', 'ok', 'bad');
+  if (cls) ui.pad.classList.add(cls);
+  ui.padMain.textContent = main; ui.padSub.textContent = sub;
+  clearTimeout(padTimer);
+  padTimer = setTimeout(() => {
+    ui.pad.classList.remove('perfect', 'good', 'ok', 'bad');
+    ui.padMain.textContent = 'ตบ!'; ui.padSub.textContent = 'แตะที่นี่ หรือกด Space / F / J';
+  }, 380);
+}
+function flashPad() {
+  ui.pad.classList.add('down'); setTimeout(() => ui.pad.classList.remove('down'), 90);
+}
+function grade(d, W) {
+  const r = Math.abs(d) / W;
+  return r <= .33 ? 'perfect' : r <= .66 ? 'good' : 'ok';
+}
+const GRADE_TXT = { perfect: 'เป๊ะ!', good: 'ดี', ok: 'พอใช้' };
+function onTap(ts) {
+  const s = state;
+  let ctx;
+  try { ctx = audio(); if (ctx.state === 'suspended') ctx.resume(); } catch (e) { return; }
+  const active = (s.phase === 'counting' || s.phase === 'playing') && s.mode === 'play';
+  if (ui.tapSound.checked && s.mode !== 'demo' || (!active && s.phase === 'idle')) {
+    if (!(s.phase !== 'idle' && s.phase !== 'done' && s.mode === 'demo')) tapSound(ctx.currentTime);
+  }
+  if (!active) { if (s.phase === 'idle' || s.phase === 'done') sealSlap('good'); padFeedback('', 'ตบ!', 'แตะที่นี่ หรือกด Space / F / J'); return; }
+  const tapCtx = ctx.currentTime - (performance.now() - ts) / 1000;
+  const eff = tapCtx - outLat() - s.cal / 1000;
+  let best = -1, bd = Infinity;
+  s.expected.forEach((e, k) => {
+    if (e.j) return;
+    const d = Math.abs(eff - e.time);
+    if (d <= s.W && d < bd) { bd = d; best = k; }
+  });
+  if (best >= 0) {
+    const e = s.expected[best], d = eff - e.time, g = grade(d, s.W);
+    e.j = g; e.off = d; s.counts[g]++;
+    markNote(e.i, g, (d > 0 ? '+' : '') + Math.round(d * 1000));
+    sealSlap(g);
+    padFeedback(g, GRADE_TXT[g], (d > 0 ? 'ช้า +' : 'เร็ว ') + Math.round(d * 1000) + ' ms');
+    updateLive();
+  } else if (s.expected.length && eff > s.expected[0].time - s.W * 1.6) {
+    s.extra++; updateLive();
+    sealSlap('bad');
+    padFeedback('bad', 'เกิน!', 'ตบผิดจังหวะ');
+  }
+}
+
+/* ============ จบรอบและสรุปผล ============ */
+const bestKey = () => `rhythmtap.best.L${state.piece.level}.T${state.piece.beats}`;
+function finish() {
+  const s = state;
+  if (s.phase !== 'counting' && s.phase !== 'playing') return;
+  cancelAnimationFrame(s.raf); clearTimeout(s.endTimer);
+  if (s.ph) { s.ph.style.display = 'none'; s.mhl.style.display = 'none'; }
+  setCount(''); setDots(-1, '');
+  if (s.mode === 'demo') {
+    s.phase = 'idle'; runningUI(false);
+    if (s.bus) { try { s.bus.disconnect(); } catch (e) {} s.bus = null; }
+    setStatus('จบตัวอย่าง — ลองตบเองดูเลย!');
+    return;
+  }
+  s.expected.forEach(e => { if (!e.j) { e.j = 'miss'; markNote(e.i, 'miss', '✕'); s.counts.miss++; } });
+  updateLive();
+  s.phase = 'done'; runningUI(false);
+  if (s.bus) { try { s.bus.disconnect(); } catch (e) {} s.bus = null; }
+  ui.bStart.textContent = '↻ เล่นอีกครั้ง';
+  const c = s.counts, n = s.expected.length;
+  const pts = c.perfect * 100 + c.good * 70 + c.ok * 40;
+  const acc = Math.max(0, Math.round(pts / (n * 100) * 100 - s.extra * 4));
+  const hits = s.expected.filter(e => e.j !== 'miss');
+  const mean = hits.length ? hits.reduce((a, e) => a + e.off, 0) / hits.length * 1000 : 0;
+  const sd = hits.length > 1 ? Math.sqrt(hits.reduce((a, e) => a + Math.pow(e.off * 1000 - mean, 2), 0) / hits.length) : 0;
+  const stars = acc >= 92 ? 3 : acc >= 75 ? 2 : acc >= 55 ? 1 : 0;
+  const msg = acc >= 92 ? 'ยอดเยี่ยม! จังหวะแม่นมาก' : acc >= 75 ? 'ดีมาก — เกือบสมบูรณ์แล้ว' : acc >= 55 ? 'ใช้ได้เลย ลองอีกรอบจะดีขึ้น' : 'ไม่เป็นไร ลองลดความเร็ว (BPM) หรือกด “ฟังตัวอย่าง” ก่อน';
+  let tend = 'ตบตรงจังหวะดี';
+  if (hits.length) {
+    if (mean > 18) tend = 'โดยรวมตบช้ากว่าจังหวะเล็กน้อย';
+    else if (mean < -18) tend = 'โดยรวมตบเร็วกว่าจังหวะเล็กน้อย';
+    if (Math.abs(mean) > 70) tend += ' (ถ้าเป็นทุกรอบ ลองปรับ “ชดเชยเวลา” ในตัวเลือกเพิ่มเติม)';
+  }
+  let prev = 0, record = false;
+  try { prev = +(localStorage.getItem(bestKey()) || 0); if (acc > prev) { localStorage.setItem(bestKey(), acc); record = acc > 0 && prev > 0; } } catch (e) {}
+  const lv = s.piece.level;
+  ui.result.innerHTML = `
+    <div class="res-head">
+      <div class="stars" aria-label="${stars} ดาว">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
+      <div class="acc">ความแม่นยำ <b>${acc}</b>%${record ? '<span class="badge">สถิติใหม่!</span>' : ''}</div>
+    </div>
+    <p class="res-msg">${msg}</p>
+    <div class="res-grid">
+      <div class="stat p"><b>${c.perfect}</b><span>เป๊ะ</span></div>
+      <div class="stat g"><b>${c.good}</b><span>ดี</span></div>
+      <div class="stat o"><b>${c.ok}</b><span>พอใช้</span></div>
+      <div class="stat m"><b>${c.miss}</b><span>พลาด</span></div>
+      <div class="stat"><b>${s.extra}</b><span>ตบเกิน</span></div>
+    </div>
+    <p class="res-note">ตบเฉลี่ย ${mean > 0 ? '+' : ''}${Math.round(mean)} ms · ${tend} · ความสม่ำเสมอ ±${Math.round(sd)} ms${prev ? ' · สถิติสูงสุดเดิม ' + prev + '%' : ''}</p>
+    <p class="res-note">ตัวเลขใต้โน้ต: − = ตบก่อนจังหวะ, + = ตบช้ากว่าจังหวะ (มิลลิวินาที), ✕ = ไม่ได้ตบ</p>
+    <div class="res-actions">
+      ${acc >= 90 && lv < 10 ? `<button class="btn primary" data-act="next">ไปเลเวล ${lv + 1} →</button>` : ''}
+      <button class="btn" data-act="again">เล่นจังหวะนี้อีกครั้ง</button>
+      <button class="btn" data-act="new">🎲 จังหวะใหม่</button>
+    </div>`;
+  ui.result.classList.remove('hidden');
+  setStatus(`จบรอบ — ${acc}%`);
+  sealCheer(acc);
+  ui.result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ============ จัดการ UI ============ */
+function newPiece() {
+  stopRound();
+  state.piece = generate();
+  resetJudgements();
+  buildDots(); renderPiece();
+  ui.result.classList.add('hidden');
+  ui.bStart.textContent = '▶ เริ่ม';
+  state.phase = 'idle';
+  setStatus('กด “เริ่ม” แล้วตบตามจังหวะเมโทรนอม');
+}
+ui.bStart.addEventListener('click', e => { e.currentTarget.blur(); startRound('play'); });
+ui.bDemo.addEventListener('click', e => { e.currentTarget.blur(); startRound('demo'); });
+ui.bNew.addEventListener('click', e => { e.currentTarget.blur(); newPiece(); });
+ui.bStop.addEventListener('click', e => {
+  e.currentTarget.blur(); stopRound(); resetJudgements();
+  ui.bStart.textContent = '▶ เริ่ม'; setStatus('หยุดแล้ว — กด “เริ่ม” เพื่อเล่นใหม่');
+});
+['level', 'ts', 'measures'].forEach(k => ui[k].addEventListener('change', e => { e.target.blur(); newPiece(); }));
+ui.bpm.addEventListener('input', () => { ui.bpmVal.textContent = ui.bpm.value; ui.tempoShow.textContent = ui.bpm.value; });
+ui.bpm.addEventListener('change', e => e.target.blur());
+ui.cal.addEventListener('input', () => { ui.calVal.textContent = ui.cal.value; });
+ui.cal.addEventListener('change', e => e.target.blur());
+ui.beatNums.addEventListener('change', e => {
+  e.target.blur();
+  if (state.phase === 'idle' || state.phase === 'done') renderPiece();
+});
+[ui.tapSound, ui.subdiv, ui.metro].forEach(x => x.addEventListener('change', e => e.target.blur()));
+ui.result.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'again') startRound('play');
+  else if (a === 'new') newPiece();
+  else if (a === 'next') { ui.level.value = String(Math.min(10, +ui.level.value + 1)); newPiece(); }
+});
+
+ui.pad.addEventListener('pointerdown', e => { e.preventDefault(); onTap(e.timeStamp); });
+ui.pad.addEventListener('contextmenu', e => e.preventDefault());
+const KEYS = new Set(['Space', 'KeyF', 'KeyJ']);
+window.addEventListener('keydown', e => {
+  if (!KEYS.has(e.code) || e.ctrlKey || e.metaKey || e.altKey) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  flashPad(); onTap(e.timeStamp);
+});
+window.addEventListener('keyup', e => { if (KEYS.has(e.code)) e.preventDefault(); });
+
+let rz = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(rz);
+  rz = setTimeout(() => {
+    if (state.phase === 'counting' || state.phase === 'playing') return;
+    const narrow = window.innerWidth < 700;
+    if ((narrow ? 1 : 2) !== L.perRow) renderPiece();
+  }, 150);
+});
+
+ui.bpmVal.textContent = ui.bpm.value; ui.tempoShow.textContent = ui.bpm.value;
+state.piece = generate();
+buildDots(); renderPiece();
+})();
+</script>
+</body>
+</html>
